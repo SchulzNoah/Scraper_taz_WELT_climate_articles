@@ -1,30 +1,13 @@
-# -*- coding: utf-8 -*-
-"""
-Datum: 22. August 2024 
-
-@author: Robin Saßmannshausen (taz-Scraper) + Phil Puschmann (Visualisierungen)
-"""
+# Scraping der taz
 
 
-######################################### 
-########### Scraping der taz
-#########################################
-
-
-'''
-Import der zum Scrapen notwendigen Bibliotheken
-'''
+# Import der zum Scrapen notwendigen Bibliotheken
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
 
-'''
-Hier wird eine Funktion definiert, die, aufbauend auf der Standard-URL, 
-weitere URLs erstellt. Dies ist nötig, um mehr als eine Seite von Artikeln
-zu scrapen. Die Anzahl weiterer erstellter URLs kann manuell durch die 
-Veränderung der Variable "anzahl_urls" angepasst werden.
-'''
+# URLS erstellen/zählen
 def urls_erstellen(base_url, anzahl_urls):
     urls = {}
     for i in range(anzahl_urls):
@@ -33,12 +16,9 @@ def urls_erstellen(base_url, anzahl_urls):
     return urls
 
 
-#######################
+# Hier wird eine Funktion definiert, die die Links aller einzelnen Artikel zu
+# einer Liste hinzufügt.
 
-'''
-Hier wird eine Funktion definiert, die die Links aller einzelnen Artikel zu
-einer Liste hinzufügt.
-'''
 def scrape_hrefs(urls):
     artikel_einzeln = []
     for name, url in urls.items():
@@ -56,14 +36,7 @@ def scrape_hrefs(urls):
     return artikel_einzeln
 
 
-#######################
-
-'''
-Hier wird eine Funktion definiert, die die Informationen der einzelnen Artikel 
-scraped. Diese Informationen sind der Titel, das Datum und der Text des 
-Artikels. Gleichzeitg wird auch schon das Datum in ein einheitliches Format 
-gebracht.
-'''
+# Scraping der Inhalte
 def scrape_article(url):
     # Speichern des Inhalts der Website
     response = requests.get(url)
@@ -80,8 +53,8 @@ def scrape_article(url):
     # Bei Archiv-Artikeln wird der Titelname zu "NA"
     title = title.replace('Archiv', 'NA')
          
-    ''' Datum formatieren'''
-    # "vom" wird wird entfernt
+    # Datum formatieren
+    # "vom" wird entfernt
     datum = datum.replace('vom', '').strip()
     datum = datum.split(',')[0].replace(' ', '')
     # KeinDatumgefunden wird zu NA
@@ -102,13 +75,8 @@ def scrape_article(url):
     
     return title, datum, article_text.strip(), url # URL ebenfalls hinzufügen
 
-##########
-########## Durchführung des Scrapens
-##########
-'''
-Zuerst wird die maximal mögliche (da sonst von der taz unterbunden) Anzahl
-an URLs erstellt und in einem dictionary gespeichert
-'''
+# Durchführen des Scrapings
+
 # Definition der Basis-URL (Suchseite)
 base_url = 'https://taz.de/!s=Klimawandel/?search_page={}'
 # Festlegung, bis zu welcher Seite gescrapet wird
@@ -117,21 +85,10 @@ anzahl_urls = 50
 # Scraping der URLs
 alle_urls = urls_erstellen(base_url, anzahl_urls)
 
-'''
-Dann werden die URLs aller Artikel in einer Liste gespeichert
-'''
 artikel_einzeln = scrape_hrefs(alle_urls)
-
-
-'''
-Liste für die gesammelten Artikelinformationen wird erstellt
-'''
 artikel_infos = []
 
-'''
-Durchlaufe alle Artikel-URLs und scrape die Artikelinformationen: Titel, 
-Datum, Text und füge sie zusammen mit der URL einer Liste hinzu
-'''
+
 for url in artikel_einzeln:
     title, datum, article_text, article_url = scrape_article(url)  
     if article_text:
@@ -139,47 +96,23 @@ for url in artikel_einzeln:
     else:
         print(f"Kein Text gefunden oder Fehler beim Scrapen der URL: {url}")
 
-'''
-DataFrame df_taz aus der Liste der Artikelinformationen erstellen
-'''
 
+# Speichern in Dataframe
 df_taz = pd.DataFrame(artikel_infos)
 
 
 
-#########
-######### Visualisierungen TAZ
-#########
-
-'''In diesem Abschnitt werden die 3 Visualisierungen für die taz-Artikel
-erstellt. Zum einen eine Wortwolke für die Titel, ein Säulendiagramm für
-bestimmte Framing-Kategorien der taz-Artikel und zuletzt ein Boxplot mit
-Sentiwerten der taz-Artikel.
-'''
-
-######### Wortwolke TAZ
-
-'''
-Installation der nötigen Packages für die Wortwolke, falls nicht bereits
-installiert.
-
-pip install wordcloud
-pip install matplotlib
-pip install pillow
-'''
+# Visualisierungen TAZ
+# Wortwolke TAZ
 
 
-'''
-Import der nötigen packages
-'''
+# Import der nötigen Pakete
 
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 
 
-'''
- Eliminierung von irrelevanten Wörtern/Stoppwörtern
- '''
+# Eliminierung irrelevanter Stoppwörter
 
 # Manuelles Entfernen weiterer Stoppwörter
 uninteressant = "Die e und über der NA für auf Ein im mit Woche Podcast nicht von gegen bei aus Da zu den ist wie als wird zur Das au mehr nach Wir aus"
@@ -187,14 +120,12 @@ liste_unerw_wörter = uninteressant.split()
 # Anwendung der Stoppwortliste
 STOPWORDS.update(liste_unerw_wörter)
 
-'''
-Umwandlung aller Texte in der Spalte Titel zu einem String
-'''
+# Umwandlung aller Texte in der Spalte Titel zu einem String
+
 text = " ".join(df_taz['Titel'].astype(str).tolist())
 
-''' 
-Erstellung der Wortwolke
-'''
+
+# Erstellung der Wortwolke
 
 # Erstellung der Wordcloud sowie Höhe, Breite und Hintergrundfarbe
 wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
@@ -207,22 +138,19 @@ plt.axis("off")
 plt.show()
 
 
+# Säulendiagramm TAZ
 
-######################
-############## Säulendiagramm TAZ
+# Import der notwendigen Packages
 
-'''
-Import der notwendigen Packages
-'''
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import re  
 
-'''
-Definition der Suchbegriffe bzw. Framinggruppen
-'''
+
+# Definition der Suchbegriffe bzw. Framinggruppen
+
 
 begriffsgruppen = {
     'Relativierendes Framing': ['Klimahysterie', 'Klimapanik', 'Klimafiktion', 
@@ -239,23 +167,8 @@ begriffsgruppen = {
                                'Luftverschmutzung', 'Weltuntergang']
 }
 
-'''
-Funktion zum Zählen der Begriffe in einer Textgruppe (ChatGPT)
 
-ChatGPT wurde am 27. August 2024 um 16:24 Uhr folgender Prompt gegeben:
-
-"Ich möchte ein Säulendiagramm basierend auf einer Frequenzanalyse mit Python
-Spyder un dem seaborn package erstellen. Hierfür möchte ich in einem Text
-string zum Thema Klimawandel nach einzelnen Begriffen suchen, die verschiedenen
-Gruppen zugeordnet sind (z.B. 1. Positive  Begriffe: Klimaschutz, Umweltschutz;
-2. Neutrale Begriffe: Klimawandel,...; 3. Klimakrise). Die Begriffe der jewei-
-ligen Gruppe sollen dann im string gezählt und schließlich in dem Diagramm
-dargestellt werden."
-
-Weitere Infos zum Code-Entwurf von ChatGPT befinden sich im Anhang des Projekt-
-berichts    
-'''
-
+# Zählfunktion
 def count_group_terms(text, term_groups):
     text = text.lower()  
     group_counts = {}
@@ -280,9 +193,9 @@ group_counts = count_group_terms(all_text, begriffsgruppen)
 #Erzeugung eines Dataframes mit den Ergebnissen
 df_counts = pd.DataFrame(list(group_counts.items()), columns=['Begriffsgruppe', 'Häufigkeit'])
 
-'''
-Erstellung und Konfiguration des Säulendiagrammes
-'''
+
+# Erstellen Säulendiagramm
+
 # Größe der Abbildung
 plt.figure(figsize=(10, 6))
 
@@ -308,14 +221,8 @@ plt.tight_layout()
 plt.show()
 
 
-##################
-###### Sentimentanalyse Boxplot TAZ
+# Sentimentanalyse Boxplot TAZ
 
-
-# Installation und Import aller notwendigen packages
-
-
-# pip install nltk # Installation von nltk, falls noch nicht geschehen
 import pandas as pd
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
@@ -330,9 +237,7 @@ nltk.download('vader_lexicon')
 # Aufstellen des Sentiment Analyzers
 sia = SentimentIntensityAnalyzer()
 
-'''
-Durchführung der Sentimentanalyse und Anzeigen des Ergebnisses
-'''
+# Durchführung der Sentimentanalyse und Anzeigen des Ergebnisses
 
 def analyze_sentiment(text):
     sentiment = sia.polarity_scores(text)
@@ -340,10 +245,9 @@ def analyze_sentiment(text):
 df_taz['Sentiment'] = df_taz['Artikel'].apply(analyze_sentiment)
 print(df_taz)
 
+ 
+# Erstellung und Konfiguration des Boxplots
 
-''' 
-Erstellung und Konfiguration des Boxplots
-'''
 
 # Festlegen der Plot-Größe
 plt.figure(figsize=(10, 6))
@@ -367,8 +271,3 @@ plt.legend()
 # Anzeigen des Plots
 plt.show()
 
-
-'''
-Die Dokumentation darüber, wie zwei Boxplots in einer Abbildung erstellt
-wurden, befindet sich im anderen Script: "WELT-Scraper + Visualisierungen"
-'''
